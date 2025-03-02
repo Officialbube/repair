@@ -1,9 +1,18 @@
+// app/tv/[id]/[imdb]/[seasonEpisode]/page.tsx
 import { Suspense } from "react";
 import Stream from "@/components/Player/Stream";
-const page = async ({
+
+interface PageParams {
+  imdb: string;
+  type: string;
+  id: string;
+  seasonEpisode?: string; 
+}
+
+const Page = async ({
   params,
 }: {
-  params: { imdb: string; type: string; id: string };
+  params: PageParams;
 }) => {
   return (
     <div>
@@ -14,4 +23,4 @@ const page = async ({
   );
 };
 
-export default page;
+export default Page;

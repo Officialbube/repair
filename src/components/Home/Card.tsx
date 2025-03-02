@@ -2,11 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 
 const Card = ({ media }: { media: any }) => {
+
+  const getMediaUrl = () => {
+    // Default to "movie" if media_type is not provided
+    const mediaType = media?.media_type || "movie";
+    return `/${mediaType}/${media.id}`;
+  };
+
   return (
     <Link
-      href={`/watch/${media?.media_type ? media.media_type : "movie"}/${
-        media?.id
-      }`}
+    href={getMediaUrl()}
+    
     >
       <div className="flex flex-col justify-center items-center group">
         <div className="relative">

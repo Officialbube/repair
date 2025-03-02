@@ -37,23 +37,43 @@ export async function search(query: string) {
 // get stream url
 export async function getStreamUrl(file: string, key: string) {
   try {
-    // console.log("file", file);
-    // console.log("key", key);
     const response = await fetch(`${process.env.STREAM_API}/getStream`, {
-      cache: "no-cache",
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        file,
-        key,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file, key }),
     });
-    const data = await response.json();
-    return data;
+
+    // Handle non-OK responses first
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Stream API error:', errorText);
+      return { 
+        success: false, 
+        error: errorText.includes('Too many') ? 'Too many requests' : 'API error',
+        status: response.status
+      };
+    }
+
+    // Verify JSON content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response from stream API:', text);
+      return { 
+        success: false, 
+        error: 'Invalid response format',
+        responseText: text
+      };
+    }
+
+    return await response.json();
   } catch (error) {
-    console.log(error);
+    console.error('Network error in getStreamUrl:', error);
+    return { 
+      success: false, 
+      error: 'Network request failed',
+      details: error 
+    };
   }
 }
 
@@ -64,11 +84,39 @@ export async function getMediaInfo(id: string) {
       `${process.env.STREAM_API}/mediaInfo?id=${id}`,
       { cache: "no-cache" }
     );
+
+    // First check if response is OK
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`HTTP error! Status: ${response.status}, Response: ${text}`);
+      return { 
+        success: false, 
+        error: `HTTP error! Status: ${response.status}`,
+        status: response.status
+      };
+    }
+
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      const text = await response.text();
+      console.error('Received non-JSON response:', text);
+      return { 
+        success: false, 
+        error: 'Invalid response format',
+        responseText: text
+      };
+    }
+
     const data = await response.json();
-    // console.log("data", data);
     return data;
   } catch (error) {
-    console.log(error);
+    console.error('Network error:', error);
+    return { 
+      success: false, 
+      error: 'Network request failed',
+      details: error 
+    };
   }
 }
 
@@ -159,11 +207,83 @@ export async function playEpisode(
 export async function getSeasonList(id: string) {
   try {
     const response = await fetch(
-      `${process.env.STREAM_API}/getSeasonList?id=${id}`
+      `${process.env.STREAM_API}/getSeasonList?id=${id}`,
+      {
+        cache: "no-cache",
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
     );
+
+    // Check if response is ok
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}`);
+      return { success: false, error: `HTTP error! status: ${response.status}` };
+    }
+
+    // Check content type
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("Received non-JSON response:", contentType);
+      return { success: false, error: "Invalid response format" };
+    }
+
     const data = await response.json();
+    
+    // Validate data structure
+    if (!data || !Array.isArray(data?.data?.seasons)) {
+      console.error("Invalid data structure received:", data);
+      return { success: false, error: "Invalid data structure" };
+    }
+
     return data;
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching season list:", error);
+    return { success: false, error: "Failed to fetch season list" };
+  }
+}
+
+export async function getEpisodeInfo(tmdbId: string, seasonNumber: number, episodeNumber: number) {
+  try {
+    // Fetch episode details from TMDB
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch episode info');
+    }
+    
+    const episodeData = await response.json();
+    
+    // Get the TV show details to extract the IMDB ID
+    const showResponse = await fetch(
+      `https://api.themoviedb.org/3/tv/${tmdbId}/external_ids?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+    );
+    
+    if (!showResponse.ok) {
+      throw new Error('Failed to fetch show external IDs');
+    }
+    
+    const externalIds = await showResponse.json();
+    
+    // Return combined data
+    return {
+      ...episodeData,
+      imdbId: externalIds.imdb_id
+    };
+  } catch (error) {
+    console.error('Error fetching episode info:', error);
+    return {
+      name: 'Episode not found',
+      overview: 'Unable to load episode information',
+      still_path: '',
+      air_date: '',
+      vote_average: 0,
+      season_number: seasonNumber,
+      episode_number: episodeNumber,
+      imdbId: ''
+    };
   }
 }

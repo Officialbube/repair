@@ -8,24 +8,78 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { consumetPlay } from "@/lib/consumetApi";
 import { toast } from "react-toastify";
 
+interface PosterData {
+  posterPath?: string;
+  backdropPath?: string;
+}
+
 const Stream = ({
   params,
 }: {
-  params: { imdb: string; type: string; id: string };
+  params: { imdb: string; type: string; id: string; seasonEpisode?: string; };
 }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const season = searchParams.get("season");
-  const episode = searchParams.get("episode");
+  //const season = searchParams.get("season");
+  //const episode = searchParams.get("episode");
   const dispatch = useAppDispatch();
   const [url, setUrl] = useState<string>("");
+  const [posterData, setPosterData] = useState<PosterData>({});
   const ref = React.useRef<any>();
   const [art, setArt] = useState<any>();
   const [availableLang, setAvailableLang] = useState<any>([""]);
   const [currentLang, setCurrentLang] = useState<any>("");
   const [sub, setSub] = useState<any>([]);
 
+  let season: string | null = null;
+  let episode: string | null = null;
+
+  if (params.seasonEpisode) {
+    [season, episode] = params.seasonEpisode.split('-');
+  } else {
+    season = searchParams.get("season");
+    episode = searchParams.get("episode");
+  }
+
   const provider = useAppSelector((state) => state.options.api);
+
+  useEffect(() => {
+    async function fetchPosterData() {
+      try {
+        // First try to get TMDB ID using IMDB ID
+        const findResponse = await fetch(
+          `https://api.themoviedb.org/3/find/${params.imdb}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&external_source=imdb_id`
+        );
+        console.log(findResponse)
+        const findData = await findResponse.json();
+        
+        // Get the TMDB ID from the results
+        const tmdbId = findData?.movie_results?.[0]?.id || findData?.tv_results?.[0]?.id;
+        console.log(tmdbId)
+        
+        if (tmdbId) {
+          // Fetch detailed data using TMDB ID
+          const detailsResponse = await fetch(
+            `https://api.themoviedb.org/3/${params.type}/${tmdbId}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+          );
+          console.log(detailsResponse)
+          const detailsData = await detailsResponse.json();
+          console.log(detailsData)
+          
+          setPosterData({
+            posterPath: detailsData.poster_path,
+            backdropPath: detailsData.backdrop_path
+          });
+          console.log(detailsData.poster_path)
+          console.log(detailsData.backdrop_path)
+        }
+      } catch (error) {
+        console.error('Error fetching poster data:', error);
+      }
+    }
+
+    fetchPosterData();
+  }, [params.imdb, params.type]);
 
   useEffect(() => {
     async function get8Stream() {
@@ -104,6 +158,15 @@ const Stream = ({
       getConsumet();
     }
   }, [currentLang]);
+  const getPosterUrl = () => {
+    if (posterData.backdropPath) {
+      return `https://image.tmdb.org/t/p/original${posterData.backdropPath}`;
+    }
+    if (posterData.posterPath) {
+      return `https://image.tmdb.org/t/p/original${posterData.posterPath}`;
+    }
+    return ''; // Fallback empty string if no poster available
+  };
   return (
     <div className="fixed bg-black inset-0 flex justify-center items-end z-[200]">
       <div className="w-[100%] h-[100%] rounded-lg" id="player-container">
@@ -111,33 +174,46 @@ const Stream = ({
           <Artplayer
             artRef={ref}
             sub={sub}
+            posterUrl={getPosterUrl()} // Pass poster URL directly to ArtPlayer
+            availableLang={availableLang} // Add this prop
+            onLanguageChange={(lang: string) => {
+              setCurrentLang(lang);  // This will trigger the useEffect to fetch new URL
+              console.log("Language changed to:", lang); // For debugging
+            }}
             style={{ width: "100%", height: "100%", aspectRatio: "16/9" }}
             option={{
               container: "#player-container",
               url: url,
+              aspectRatio: true,
+              flip: true,
+              miniProgressBar: true,
               setting: true,
               theme: "#fcba03",
+              
               controls: [
                 {
                   name: "Lang",
                   position: "right",
                   index: 10,
-                  html: `<p >${availableLang[0]}</p>`,
+                  html: ``,
+                  style: {
+                    display: "none"
+                  },
                   selector: [
                     ...availableLang.map((item: any, i: number) => {
                       return {
                         default: i === 0,
-                        html: `<p ">${item}</p>`,
+                        html: ``,
                         value: item,
                       };
                     }),
                   ],
                   onSelect: function (item, $dom) {
                     // @ts-ignore
-                    setCurrentLang(item.value);
-                    return item.html;
+                    setCurrentLang(item.value); 
+                    return item.html; 
                   },
-                },
+                }, 
               ],
               playbackRate: true,
               fullscreen: true,
@@ -159,9 +235,9 @@ const Stream = ({
               cssVar: {
                 "--art-indicator-scale": 1.5,
                 "--art-indicator-size": "15px",
-                "--art-bottom-gap": "25px",
+                "--art-bottom-gap": "0px",
                 "--art-control-icon-scale": 1.7,
-                "--art-padding": "10px 30px",
+                //"--art-padding": "10px 30px 0px",
                 // "--art-control-icon-size": "60px",
                 "--art-volume-handle-size": "20px",
                 "--art-volume-height": "150px",
@@ -177,14 +253,14 @@ const Stream = ({
           </div>
         )}
       </div>
-      <div
+      {/*<div
         className="absolute top-0 right-0 m-5 cursor-pointer z-50"
         onClick={() => {
           router.replace(`/watch/${params.type}/${params.id}}`);
         }}
       >
         <CgClose className="text-white text-4xl" />
-      </div>
+      </div>*/} 
     </div>
   );
 };

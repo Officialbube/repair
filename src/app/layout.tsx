@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   generator: "Next.js",
   description: "Watch Movies and TV Shows Online For Free",
   manifest: "/manifest.json",
-};
+}; 
 
 export default function RootLayout({
   children,
@@ -43,7 +43,7 @@ export default function RootLayout({
             shadow="0 0 10px #2299DD,0 0 5px #2299DD"
           />
           <ToastContainer />
-          <Nav />
+          {/*<Nav />*/}
           {children}
           <Analytics />
           <SpeedInsights />

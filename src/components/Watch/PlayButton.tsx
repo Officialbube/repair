@@ -14,11 +14,15 @@ const PlayButton = ({
   imdbId,
   tmdbId,
   type,
+  seasonNumber,
+  episodeNumber,
 }: {
   getSeasonList: (imdbId: string) => Promise<any>;
   imdbId: string;
   tmdbId: string;
   type: string;
+  seasonNumber?: string;
+  episodeNumber?: string;
 }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -62,7 +66,20 @@ const PlayButton = ({
       setError(false);
       getConsumet();
     }
-  }, [provider]);
+  }, [provider, getSeasonList, imdbId, tmdbId, type]);
+
+  const handlePlay = () => {
+    if (type === "movie") {
+      // Direct movie route
+      router.push(`/movie/stream/${imdbId}`);
+    } else if (type === "episode") {
+      // Direct streaming for specific episode
+      router.push(`/tv/stream/${imdbId}/${seasonNumber}-${episodeNumber}`);
+    } else {
+      // For TV shows, show episode selection modal
+      dispatch(toggleEpModal(true));
+    }
+  };
 
   if (error) {
     return (
@@ -81,18 +98,12 @@ const PlayButton = ({
     !seasonModal && (
       <div className="">
         <button
-          className="flex justify-center items-center gap-3 cursor-pointer group bg-white rounded-lg 
-        px-3 py-0 bg-opacity-20 duration-200 backdrop-blur-sm max-sm:w-[350px] max-sm:justify-between"
+          className="flex justify-center items-center gap-3 cursor-pointer group rounded-lg 
+         py-0 bg-opacity-20 duration-200 backdrop-blur-sm max-sm:justify-between"
           disabled={loading}
-          onClick={() => {
-            if (type === "movie") {
-              router.push(`/watch/${type}/${tmdbId}/${imdbId}`);
-            } else {
-              dispatch(toggleEpModal(true));
-            }
-          }}
+          onClick={handlePlay} 
         >
-          <p className="text-white text-4xl font-extrabold">Play</p>
+          {/*<p className="text-white text-4xl font-extrabold">Play</p>*/}
           {loading ? (
             <div className="flex justify-center items-center h-[100px] w-[100px]">
               <div className="mediaLoader"></div>
