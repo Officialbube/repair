@@ -7,6 +7,8 @@ import { playEpisode, playMovie } from "@/lib/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import { consumetPlay } from "@/lib/consumetApi";
 import { toast } from "react-toastify";
+import ErrorMessage from "../ErrorMessage";
+
 
 interface PosterData {
   posterPath?: string;
@@ -25,6 +27,7 @@ const Stream = ({
   const dispatch = useAppDispatch();
   const [url, setUrl] = useState<string>("");
   const [posterData, setPosterData] = useState<PosterData>({});
+  const [error, setError] = useState(false);
   const ref = React.useRef<any>();
   const [art, setArt] = useState<any>();
   const [availableLang, setAvailableLang] = useState<any>([""]);
@@ -91,16 +94,7 @@ const Stream = ({
           setUrl(data?.data?.link);
           setAvailableLang(data?.availableLang);
         } else {
-          toast.error("No link found", {
-            position: "top-right",
-            autoClose: 1000,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "dark",
-          });
+          setError(true);
         }
       } else {
         const data = await playEpisode(
@@ -115,16 +109,7 @@ const Stream = ({
           setAvailableLang(data?.availableLang);
           art?.switchUrl(data?.data?.link);
         } else {
-          toast.error("No link found", {
-            position: "top-right",
-            autoClose: 1000,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "dark",
-          });
+          setError(true);
         }
       }
     }
@@ -140,16 +125,7 @@ const Stream = ({
         setUrl(data?.data?.sources[data?.data?.sources.length - 1]?.url);
         setSub(data?.data?.subtitles);
       } else {
-        toast.error("No link found", {
-          position: "top-right",
-          autoClose: 1000,
-          hideProgressBar: true,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-        });
+        setError(true);
       }
     }
     if (provider === "8stream") {
