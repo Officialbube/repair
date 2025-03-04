@@ -193,7 +193,7 @@ const Stream = ({
               ],
               playbackRate: true,
               fullscreen: true,
-              subtitleOffset: true,
+              subtitleOffset: false,
               subtitle: {
                 type: "vtt",
                 escape: false,
