@@ -64,7 +64,7 @@ const EpisodePage = async ({ params }: { params: { id: string; season: string; e
               : data.episodeInfo?.overview}
           </p>
         </div>*/}
-        <div className="flex flex-col  items-center h-[500px] z-20">
+        <div className="flex flex-col justify-center  items-center h-[500px] z-20">
           <PlayButton
             getSeasonList={getSeasonList}
             imdbId={data.episodeInfo?.imdbId}
