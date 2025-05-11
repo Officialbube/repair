@@ -23,12 +23,14 @@ async function getData(id: string, season: string, episode: string) {
   }
 }
 
-const EpisodePage = async ({ params }: { params: { id: string; season: string; episode: string } }) => {
-  const data = await getData(params.id, params.season, params.episode)
+const EpisodePage = async ({ params }: { params: { id: string; seasonEpisode: string } }) => {
+  // Split the combined parameter
+  const [season, episode] = params.seasonEpisode.split('-');
+  const data = await getData(params.id, season, episode)
   const filteredImages = data?.images?.backdrops?.filter((image: any) => image.height >= 1000)
 
   return (
-    <div className="overflow-hidden relative">
+    <div className="overflow-hidden relative h-screen">
       <Image
         unoptimized={true}
         priority={true}
@@ -39,11 +41,11 @@ const EpisodePage = async ({ params }: { params: { id: string; season: string; e
         alt={data.episodeInfo?.name || "Episode Image"}
         width={1920}
         height={1080}
-        className="object-cover w-full h-[500px] lg:h-[700px] absolute top-0 left-0"
+        className="object-cover w-full h-screen lg:h-[700px] absolute top-0 left-0"
       />
       <div className="absolute top-0 left-0 w-full h-[500px] lg:h-[700px] bg-gradient-to-t from-black to-transparent"></div>
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-black to-transparent"></div>
-      <div className="flex flex-row max-sm:gap-7 max-sm:flex-col justify-center items-center w-full lg:h-full max-sm:h-[800px]">
+      <div className="flex flex-row max-sm:gap-7 max-sm:flex-col justify-center items-center w-full lg:h-full max-sm:h-screen">
         {/*<div className="top-0 flex flex-col justify-start gap-10 z-20 ml-8 h-full">
           <h1 className="text-white text-4xl lg:text-6xl font-semibold mt-[250px]">{data.episodeInfo?.name}</h1>
           <div className="flex gap-4 mt-4 justify-start items-center">
@@ -70,8 +72,8 @@ const EpisodePage = async ({ params }: { params: { id: string; season: string; e
             imdbId={data.episodeInfo?.imdbId}
             tmdbId={params.id}
             type="episode"
-            seasonNumber={params.season}
-            episodeNumber={params.episode}
+            seasonNumber={season}
+            episodeNumber={episode}
           />
         </div>
       </div>
@@ -84,12 +86,13 @@ export default EpisodePage
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string; season: string; episode: string }
+  params: { id: string; seasonEpisode: string }
 }): Promise<Metadata> {
-  const data = await getData(params.id, params.season, params.episode)
+  const [season, episode] = params.seasonEpisode.split('-');
+  const data = await getData(params.id, season, episode)
   return {
-    title: `${data.episodeInfo?.name} - Season ${params.season} Episode ${params.episode}`,
-    description: `Watch ${data.episodeInfo?.name} - Season ${params.season} Episode ${params.episode} online. ${data.episodeInfo?.overview}`,
+    title: `${data.episodeInfo?.name} - Season ${season} Episode ${episode}`,
+    description: `Watch ${data.episodeInfo?.name} - Season ${season} Episode ${episode} online. ${data.episodeInfo?.overview}`,
     keywords: ["TV series", "episode", data.episodeInfo?.name],
     category: "TV Series",
   }

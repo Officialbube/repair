@@ -39,7 +39,7 @@ const Seasons = ({
   }, [id, season, getEpisodes]);
 
   const handleEpisodeClick = (episodeNumber: number, seasonNumber: number) => {
-    router.push(`/tv/${id.tmdb}/${seasonNumber}/${episodeNumber}`);
+    router.push(`/tv/${id.tmdb}/${seasonNumber}-${episodeNumber}`);
     dispatch(toggleEpModal(false));
   };
 
