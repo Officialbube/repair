@@ -37,11 +37,13 @@ export async function search(query: string) {
 // get stream url
 export async function getStreamUrl(file: string, key: string) {
   try {
+    console.log("Fetching mediaInfo for ID:");
     const response = await fetch(`${process.env.STREAM_API}/getStream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file, key }),
     });
+    console.log("Received response for mediaInfo:", response.status);
 
     // Handle non-OK responses first
     if (!response.ok) {
@@ -80,11 +82,12 @@ export async function getStreamUrl(file: string, key: string) {
 // get Media info
 export async function getMediaInfo(id: string) {
   try {
+    console.log("Fetching mediaInfo for ID:", id);
     const response = await fetch(
       `${process.env.STREAM_API}/mediaInfo?id=${id}`,
       { cache: "no-cache" }
     );
-
+    console.log("Received response for mediaInfo:", response.status);
     // First check if response is OK
     if (!response.ok) {
       const text = await response.text();
@@ -230,19 +233,41 @@ export async function getSeasonList(id: string) {
     }
 
     const data = await response.json();
+    console.log('API response:', data); // Debug the full response
     
+    // Handle "not found" case explicitly
+    if (data.success === false) {
+      return {
+        success: false,
+        error: data.message || 'Media not found',
+        isNotFound: true // Special flag for UI to handle differently
+      };
+    }
+
     // Validate data structure
     if (!data || !Array.isArray(data?.data?.seasons)) {
       console.error("Invalid data structure received:", data);
-      return { success: false, error: "Invalid data structure" };
+      return { success: false, error: "Invalid data structure", receivedData: data  };
     }
 
     return data;
   } catch (error) {
     console.error("Error fetching season list:", error);
-    return { success: false, error: "Failed to fetch season list" };
-  }
-}
+     // Type-safe error handling
+     let errorMessage = "Failed to fetch season list";
+     if (error instanceof Error) {
+       errorMessage = error.message;
+     } else if (typeof error === 'string') {
+       errorMessage = error;
+     }
+     
+     return { 
+       success: false, 
+       error: "Failed to fetch season list",
+       details: errorMessage 
+     };
+   }
+ }
 
 export async function getEpisodeInfo(tmdbId: string, seasonNumber: number, episodeNumber: number) {
   try {
